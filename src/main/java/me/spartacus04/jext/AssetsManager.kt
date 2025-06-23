@@ -14,7 +14,9 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.net.HttpURLConnection
 import java.net.URI
+import java.util.UUID
 import java.util.zip.ZipFile
 
 /**
@@ -31,6 +33,7 @@ class AssetsManager {
      * 
      * @param id The id and path of the config file.
      */
+    @Suppress("unused")
     fun registerConfigFile(id: String) {
         localToRpMap[id] = id
     }
@@ -41,6 +44,7 @@ class AssetsManager {
      * @param id The id and name of the asset.
      * @param path The path of the asset in the resource pack.
      */
+    @Suppress("unused")
     fun registerAsset(id: String, path: String) {
         localToRpMap[id] = path
     }
@@ -113,7 +117,16 @@ class AssetsManager {
             val successFullDownload = runBlocking {
                 withContext(Dispatchers.IO) {
                     return@withContext try{
-                        val inputStream = BufferedInputStream(rpUrl.openStream())
+                        val connection = rpUrl.openConnection() as HttpURLConnection
+
+                        connection.setRequestProperty("X-Minecraft-Username", "jext")
+                        connection.setRequestProperty("X-Minecraft-UUID", UUID.randomUUID().toString())
+                        connection.setRequestProperty("X-Minecraft-Version", "1.21.5")
+                        connection.setRequestProperty("X-Minecraft-Version-Id", "1.21.5")
+                        connection.setRequestProperty("X-Minecraft-Pack-Format", "55")
+                        connection.setRequestProperty("User-Agent", "Minecraft Java/1.21.5")
+
+                        val inputStream = BufferedInputStream(connection.inputStream)
                         val outputStream = FileOutputStream(file)
 
                         val buffer = ByteArray(1024)
@@ -215,7 +228,7 @@ class AssetsManager {
      * 
      * @return Whether the export was successful.
      */
-    suspend fun tryExportResourcePack() : Boolean {
+    fun tryExportResourcePack() : Boolean {
         val file = getResourcePack() ?: return false
 
         runBlocking {

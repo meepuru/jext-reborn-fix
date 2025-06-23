@@ -13,14 +13,16 @@ internal class CrafterCraftDiscEvent : JextListener("1.21") {
     @EventHandler
     fun onCrafterCraft(e: CrafterCraftEvent) {
         if (e.result.type != JEXT_FRAGMENT_OUTPUT) return
-        if(e.block.state !is Crafter) return
+        if (e.block !is Crafter) return
 
-        val isCustomDisc = (e.block.state as Crafter).inventory.any {
+        val inventory = (e.block as Crafter).inventory.contents.clone()
+
+        val isCustomDisc = inventory.any {
             return@any Disc.isCustomDisc(it)
         }
 
         // check if every disc has same namespace, if they have the same namespace return the namespace else null
-        val namespace = (e.block.state as Crafter).inventory.map {
+        val namespace = inventory.map {
             Disc.fromItemstack(it)?.namespace
         }.distinct().singleOrNull()
 

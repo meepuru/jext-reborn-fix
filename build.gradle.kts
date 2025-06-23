@@ -1,5 +1,4 @@
 import proguard.gradle.ProGuardTask
-import io.papermc.hangarpublishplugin.model.Platforms
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -10,7 +9,7 @@ plugins {
     id("org.jetbrains.dokka") version "2.0.0"
 
     `maven-publish`
-    id("io.papermc.hangar-publish-plugin") version "0.1.2"
+    id("io.papermc.hangar-publish-plugin") version "0.1.3"
     id("com.modrinth.minotaur") version "2.8.7"
 }
 
@@ -164,13 +163,16 @@ hangarPublish {
         apiKey.set(hangarApiKey)
 
         platforms {
-            register(Platforms.PAPER) {
-                jar.set(tasks.getByName("proguardJar").outputs.files.singleFile)
+            paper {
+                url.set("${property("modrinth_url")}")
                 platformVersions.set("${property("minecraft_versions")}".split(","))
 
-                this.dependencies {
+                dependencies {
                     hangar("ProtocolLib") {
                         required.set(true)
+                    }
+                    this.url("NoteBlockAPI", "https://modrinth.com/plugin/noteblockapi") {
+                        required.set(false)
                     }
                 }
             }
@@ -189,6 +191,10 @@ modrinth {
     uploadFile.set(tasks.getByName("proguardJar").outputs.files.singleFile)
     gameVersions.set("${property("minecraft_versions")}".split(","))
     loaders.set("${property("modrinth_loaders")}".split(","))
+
+    dependencies {
+        optional.project("noteblockapi")
+    }
 
     changelog.set(modrinthChangelog)
 

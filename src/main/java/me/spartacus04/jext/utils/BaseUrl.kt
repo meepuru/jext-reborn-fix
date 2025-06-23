@@ -7,7 +7,31 @@ import org.bukkit.entity.Player
 import java.net.InetAddress
 
 internal class BaseUrl {
-    fun getBaseUrl(commandSender: CommandSender) : String {
+    fun getUrl(commandSender: CommandSender) : String {
+        var hostName = getBaseUrl(commandSender)
+
+        if(!hostName.contains(":")) {
+            val split = hostName.split("/")
+
+            if(split.size > 3) {
+                hostName = split[0] + "//" + split[2] + ":${CONFIG.WEB_INTERFACE_PORT}" + "/" + split.subList(3, split.size).joinToString("/")
+            } else {
+                hostName += ":${CONFIG.WEB_INTERFACE_PORT}"
+            }
+        }
+
+        if(!hostName.startsWith("https://") && !hostName.startsWith("http://")) {
+            hostName = "http://$hostName"
+        }
+
+        if(hostName.endsWith("/")) {
+            hostName = hostName.substring(0, hostName.length - 1)
+        }
+
+        return hostName
+    }
+
+    private fun getBaseUrl(commandSender: CommandSender) : String {
         if(CONFIG.WEB_INTERFACE_BASE_URL.isNotBlank()) {
             return CONFIG.WEB_INTERFACE_BASE_URL
         } else if(Bukkit.getIp().isNotBlank()) {
