@@ -17,12 +17,18 @@ import org.bukkit.event.player.PlayerJoinEvent
 internal class PlayerJoinEvent : JextListener() {
     @EventHandler
     fun onPlayerJoin(playerJoinEvent: PlayerJoinEvent) {
-        if(CONFIG.WEB_INTERFACE_API_ENABLED && CONFIG.RESOURCE_PACK_HOST) {
-            if(!PLUGIN.dataFolder.resolve("resource-pack.zip").exists()) return
+        if (CONFIG.WEB_INTERFACE_API_ENABLED && CONFIG.RESOURCE_PACK_HOST) {
+            val hostName = BASE_URL.getUrl(playerJoinEvent.player)
 
-            val baseUrl = BASE_URL.getUrl(playerJoinEvent.player)
+            val url = if (hostName.startsWith("https://") || hostName.startsWith("http://")) {
+                // 当包含协议头时直接拼接路径
+                "$hostName/resource-pack.zip"
+            } else {
+                // 原始拼接方式保留端口号
+                "http://$hostName:${CONFIG.WEB_INTERFACE_PORT}/resource-pack.zip"
+            }
 
-            playerJoinEvent.player.setResourcePack("$baseUrl/resource-pack.zip", ASSETS_MANAGER.resourcePackHostedHash)
+            playerJoinEvent.player.setResourcePack(url, ASSETS_MANAGER.resourcePackHostedHash)
         }
 
         if (playerJoinEvent.player.hasPermission("jext.notifyupdate") && CONFIG.CHECK_FOR_UPDATES) {
