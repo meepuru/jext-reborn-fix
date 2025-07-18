@@ -1,33 +1,45 @@
 package me.spartacus04.jext.listeners
 
-import com.comphenix.protocol.PacketType
-import com.comphenix.protocol.events.PacketEvent
+import com.github.retrooper.packetevents.event.PacketSendEvent
+import com.github.retrooper.packetevents.protocol.packettype.PacketType
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEffect
 import me.spartacus04.jext.JextState.LANG
+import me.spartacus04.jext.JextState.SCHEDULER
 import me.spartacus04.jext.discs.Disc
 import me.spartacus04.jext.listeners.utils.JextPacketListener
 import net.md_5.bungee.api.ChatMessageType
 import net.md_5.bungee.api.chat.TextComponent
+import org.bukkit.Location
 import org.bukkit.block.Jukebox
 import org.bukkit.entity.Player
-import org.bukkit.scheduler.BukkitRunnable
 
-internal class RecordPacketEvent : JextPacketListener(packetType = PacketType.Play.Server.WORLD_EVENT) {
-    override fun onPacketSending(event: PacketEvent) {
-        val packet = event.packet
-        val player = event.player
-        val block = packet.blockPositionModifier.values[0].toLocation(player.world).block
-        val blockState = block.state
+internal class RecordPacketEvent : JextPacketListener() {
+    override fun onPacketSend(event: PacketSendEvent) {
+        if(event.packetType != PacketType.Play.Server.EFFECT) return
 
-        if (blockState is Jukebox) {
-            val disc = Disc.fromItemstack(blockState.record) ?: return
+        val packet = WrapperPlayServerEffect(event)
 
-            object : BukkitRunnable() {
-                override fun run() = actionBarDisplay(player, disc)
-            }.runTaskLater(plugin, 1)
-        }
+        // https://minecraft.wiki/w/Java_Edition_protocol/Packets#World_Event
+
+        if(packet.type != 1010) return
+
+        val player = event.getPlayer<Player>()
+
+        val position = packet.position.toVector3d()
+
+        SCHEDULER.runTaskLater({
+            val block = Location(player.world, position.x, position.y, position.z).block
+            val blockState = block.state
+
+            if (blockState !is Jukebox) return@runTaskLater
+            val disc = Disc.fromItemstack(blockState.record) ?: return@runTaskLater
+
+            actionBarDisplay(player, disc)
+        }, 1)
+
     }
 
-    fun actionBarDisplay(player: Player, disc: Disc) {
+    private fun actionBarDisplay(player: Player, disc: Disc) {
         player.spigot().sendMessage(
             ChatMessageType.ACTION_BAR,
             TextComponent(LANG.getKey(player, "now-playing", mapOf(
